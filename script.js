@@ -8,14 +8,15 @@ const quotes = [
 ];
 
 let currentUser = null;
-let performanceChart = null; // Graph instance
+let performanceChart = null; 
 const DAYS_IN_MONTH = 31;
 const DB_NAME = 'discipline_engine_db';
 
+// UNIFIED STARTUP: Handles all restoration in one sequence
 window.onload = () => {
     renderMonthHeaders();
-    checkSession();
     restoreAvatar();
+    checkSession(); // This will trigger initEngine if a user is logged in
 };
 
 /** 1. IDENTITY & AUTH **/
@@ -35,8 +36,10 @@ function previewImage(input) {
 function restoreAvatar() {
     const savedImg = localStorage.getItem('officer_avatar');
     if (savedImg) {
-        document.getElementById('profile-preview').src = savedImg;
-        document.getElementById('dash-photo').src = savedImg;
+        const preview = document.getElementById('profile-preview');
+        const dash = document.getElementById('dash-photo');
+        if(preview) preview.src = savedImg;
+        if(dash) dash.src = savedImg;
     }
 }
 
@@ -76,7 +79,9 @@ function initEngine() {
     document.getElementById('display-name').innerText = currentUser;
     
     const quoteBox = document.getElementById('quote-display');
-    quoteBox.innerText = `"${quotes[Math.floor(Math.random() * quotes.length)]}"`;
+    if(quoteBox) {
+        quoteBox.innerText = `"${quotes[Math.floor(Math.random() * quotes.length)]}"`;
+    }
     
     loadHabitData();
 }
@@ -121,7 +126,7 @@ function loadHabitData() {
     });
     
     updateEfficiency();
-    updatePerformanceGraph(); // Update Graph
+    updatePerformanceGraph(); 
 }
 
 function addNewTask() {
@@ -132,7 +137,9 @@ function addNewTask() {
     
     if (!task) return;
 
-    let db = JSON.parse(localStorage.getItem(DB_NAME));
+    let db = JSON.parse(localStorage.getItem(DB_NAME)) || {};
+    if (!db[currentUser]) db[currentUser] = { habits: [] };
+
     db[currentUser].habits.push({ 
         time, 
         task, 
@@ -161,12 +168,14 @@ function deleteHabit(index) {
 
 function updateEfficiency() {
     const day = new Date().getDate() - 1; 
-    const db = JSON.parse(localStorage.getItem(DB_NAME));
+    const db = JSON.parse(localStorage.getItem(DB_NAME)) || {};
     const habits = db[currentUser]?.habits || [];
     
     const percentDisplay = document.getElementById('circle-percent');
     const ring = document.getElementById('ring-progress');
     
+    if (!percentDisplay || !ring) return;
+
     if (habits.length === 0) {
         percentDisplay.innerText = "0%";
         ring.style.strokeDashoffset = 188.5;
@@ -190,10 +199,9 @@ function updatePerformanceGraph() {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     
-    const db = JSON.parse(localStorage.getItem(DB_NAME));
+    const db = JSON.parse(localStorage.getItem(DB_NAME)) || {};
     const habits = db[currentUser]?.habits || [];
     
-    // Calculate efficiency for each day (1-31)
     const dailyEfficiency = Array.from({ length: DAYS_IN_MONTH }, (_, dayIndex) => {
         if (habits.length === 0) return 0;
         let done = 0;
