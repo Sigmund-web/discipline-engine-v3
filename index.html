@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discipline_Engine_v3 | Mission Control</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;500&family=Orbitron:wght@700&family=Space+Grotesk:wght@300;400;700&display=swap');
+
+        :root {
+            --bg-color: #060913;
+            --panel-bg: #0b111e;
+            --accent: #00f2ff;
+            --accent-glow: rgba(0, 242, 255, 0.3);
+            --glass-border: rgba(0, 242, 255, 0.15);
+            --danger: #ff003c;
+            --text: #e2e2e6;
+        }
+
+        body {
+            margin: 0;
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(0, 242, 255, 0.05) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(255, 0, 60, 0.05) 0px, transparent 50%);
+            background-attachment: fixed;
+            color: var(--text);
+            font-family: 'Space Grotesk', sans-serif;
+            display: flex;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .main-wrapper { display: flex; width: 100%; }
+
+        .sidebar {
+            width: 240px;
+            background: var(--panel-bg);
+            border-right: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            padding: 30px 20px;
+            gap: 10px;
+        }
+
+        .sidebar-logo {
+            font-family: 'Orbitron';
+            color: var(--accent);
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 30px;
+            text-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        .nav-item {
+            background: transparent;
+            border: none;
+            color: rgba(255,255,255,0.6);
+            text-align: left;
+            padding: 12px 15px;
+            font-family: 'Space Grotesk';
+            cursor: pointer;
+            border-radius: 8px;
+            transition: 0.3s;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: rgba(0, 242, 255, 0.1);
+            color: var(--accent);
+        }
+
+        #auth-screen {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .auth-card {
+            width: 380px;
+            background: var(--panel-bg);
+            padding: 40px;
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+
+        #dashboard {
+            display: none;
+            flex: 1;
+            padding: 40px;
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+
+        .header-layout {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .progress-widget {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #circle-percent {
+            position: absolute;
+            font-family: 'Orbitron';
+            color: var(--accent);
+            font-size: 1rem;
+        }
+
+        .engine-table { 
+            width: 100%; 
+            border-collapse: separate; 
+            border-spacing: 0 8px; 
+        }
+
+        .engine-table th { 
+            font-family: 'Fira Code'; 
+            color: rgba(255,255,255,0.4); 
+            font-size: 0.65rem;
+            padding-bottom: 10px;
+        }
+
+        .task-row { background: rgba(255,255,255,0.02); transition: 0.2s; }
+        .task-row:hover { background: rgba(255,255,255,0.05); }
+
+        .task-info { 
+            padding: 15px 20px; 
+            border-left: 3px solid transparent;
+        }
+
+        .task-row:hover .task-info { border-left-color: var(--accent); }
+
+        .checker-circle {
+            width: 18px; height: 18px;
+            border: 2px solid rgba(0, 242, 255, 0.2);
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 0 auto;
+        }
+
+        .checker-circle.active { 
+            background: var(--accent); 
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        .minimal-input {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--glass-border);
+            border-radius: 6px;
+            color: white;
+            padding: 12px;
+            outline: none;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            border: none;
+            font-family: 'Orbitron';
+            font-size: 0.8rem;
+            padding: 12px;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: 0.3s;
+        }
+
+        .btn-primary:hover { 
+            box-shadow: 0 0 20px var(--accent-glow);
+            transform: translateY(-1px);
+        }
+
+        .action-btn {
+            background: none;
+            border: none;
+            color: var(--danger);
+            cursor: pointer;
+            margin-right: 10px;
+            opacity: 0.5;
+        }
+
+        .action-btn:hover { opacity: 1; }
+
+        .critical-alert {
+            color: var(--danger);
+            border: 1px solid var(--danger);
+            padding: 6px;
+            font-size: 0.65rem;
+            font-family: 'Orbitron';
+            text-align: center;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="main-wrapper">
+    <nav class="sidebar">
+        <div class="sidebar-logo"><span>⚡</span> AUTOFLOW</div>
+        <button class="nav-item active">Dashboard</button>
+        <button class="nav-item">Mission Reports</button>
+        <button class="nav-item">Project Zero</button>
+        
+        <div style="margin-top: auto; display: flex; flex-direction: column; gap: 10px;">
+            <div class="critical-alert">SYSTEM_STABLE</div>
+            <button class="nav-item" onclick="logout()">Logout</button>
+        </div>
+    </nav>
+
+    <div id="auth-screen">
+        <div class="auth-card">
+            <h2 style="font-family: 'Orbitron'; letter-spacing: 2px;">IDENTIFY_UNIT</h2>
+            
+            <div style="margin: 25px 0;">
+                <input type="file" id="profile-input" accept="image/*" style="display: none;" onchange="previewImage(this)">
+                <img id="profile-preview" src="https://via.placeholder.com/100?text=+" 
+                     onclick="document.getElementById('profile-input').click()" 
+                     style="width: 100px; height: 100px; border-radius: 50%; border: 2px solid var(--accent); cursor: pointer; object-fit: cover;">
+            </div>
+
+            <input type="text" id="login-user" class="minimal-input" placeholder="CALLSIGN" style="width: 100%; margin-bottom: 25px; box-sizing: border-box;">
+            
+            <button class="btn-primary" onclick="handleAuth()" style="width: 100%;">START MISSION</button>
+        </div>
+    </div>
+
+    <div id="dashboard">
+        <div class="header-layout">
+            <div style="display: flex; align-items: center;">
+                <img id="dash-photo" src="https://via.placeholder.com/50" style="width: 55px; height: 55px; border-radius: 50%; border: 2px solid var(--accent); object-fit: cover;">
+                <div style="margin-left: 20px;">
+                    <h2 id="display-name" style="font-family: 'Orbitron'; margin: 0; color: var(--accent); letter-spacing: 1px;">[CALLSIGN]</h2>
+                    <p id="quote-display" style="font-family: 'Fira Code'; font-size: 0.7rem; opacity: 0.6; margin: 5px 0;"></p>
+                </div>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 30px;">
+                <div class="progress-widget">
+                    <svg width="70" height="70" style="transform: rotate(-90deg);">
+                        <circle cx="35" cy="35" r="30" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="5"/>
+                        <circle id="ring-progress" cx="35" cy="35" r="30" fill="none" stroke="var(--accent)" 
+                                stroke-width="5" stroke-dasharray="188.5" stroke-dashoffset="188.5" style="transition: 0.8s;"/>
+                    </svg>
+                    <div id="circle-percent">0%</div>
+                </div>
+                <button class="btn-primary" style="padding: 8px 20px;">REPORT</button>
+            </div>
+        </div>
+
+        <div style="overflow-x: auto; margin-bottom: 40px; background: rgba(255,255,255,0.01); border-radius: 8px; padding: 10px;">
+            <table class="engine-table">
+                <thead><tr id="month-headers"></tr></thead>
+                <tbody id="master-rows"></tbody>
+            </table>
+        </div>
+
+        <div class="input-group" style="background: var(--panel-bg); padding: 20px; border-radius: 12px; border: 1px solid var(--glass-border);">
+            <div style="display: flex; gap: 15px;">
+                <input type="time" id="new-time" class="minimal-input" style="width: 120px;">
+                <input type="text" id="new-task" class="minimal-input" style="flex:1;" placeholder="Enter New Objective...">
+                <button class="btn-primary" onclick="addNewTask()" style="padding: 0 25px;">ADD_MISSION</button>
+            </div>
+        </div>
+
+        <div style="margin-top: 40px; background: var(--panel-bg); padding: 25px; border-radius: 12px; border: 1px solid var(--glass-border);">
+            <h3 style="font-family: 'Orbitron'; font-size: 0.8rem; color: var(--accent); margin-top: 0; margin-bottom: 20px; letter-spacing: 1px;">MISSION_EFFICIENCY_INDEX</h3>
+            <div style="height: 220px; width: 100%;">
+                <canvas id="performanceChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
